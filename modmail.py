@@ -1,13 +1,15 @@
+
 import discord
 from discord.ext import commands
 import os
+from flask import Flask
+from threading import Thread
 
-TOKEN = os.getenv("DISCORD_TOKEN")  # Store your bot token in an environment variable
-GUILD_ID = int(os.getenv("GUILD_ID"))  # Your Discord server ID
-MODMAIL_CATEGORY_ID = int(os.getenv("MODMAIL_CATEGORY_ID"))  # ID of modmail category
-CUSTOM_EMOJI_ID = int(os.getenv("CUSTOM_EMOJI_ID"))  # Custom emoji ID for the button
+TOKEN = os.getenv("DISCORD_TOKEN")
+GUILD_ID = int(os.getenv("GUILD_ID"))
+MODMAIL_CATEGORY_ID = int(os.getenv("MODMAIL_CATEGORY_ID"))
+CUSTOM_EMOJI_ID = int(os.getenv("CUSTOM_EMOJI_ID"))
 
-# Bot setup
 intents = discord.Intents.default()
 intents.messages = True
 intents.guilds = True
@@ -15,7 +17,7 @@ intents.dm_messages = True
 intents.message_content = True
 
 bot = commands.Bot(command_prefix="^", intents=intents)
-bot.remove_command("help")  # Remove default help command
+bot.remove_command("help")
 
 class CloseButton(discord.ui.View):
     def __init__(self, user_id):
@@ -27,6 +29,8 @@ class CloseButton(discord.ui.View):
         if not interaction.channel.name.startswith("thread—"):
             return await interaction.response.send_message("⚠️ This button can only be used in a modmail channel.", ephemeral=True)
 
+        await interaction.response.defer()
+        
         user = bot.get_user(self.user_id)
         if user:
             try:
@@ -37,9 +41,8 @@ class CloseButton(discord.ui.View):
                 )
                 await user.send(embed=close_embed)
             except discord.Forbidden:
-                pass  # User might have DMs disabled
+                pass
 
-        # Notify staff in the modmail channel
         embed = discord.Embed(
             title="STAFF! modmail closed 💩💩💩",
             description=f"✧ this modmail thread has been closed by {interaction.user.mention}. channel will be deleted shortlyyy",
@@ -48,8 +51,57 @@ class CloseButton(discord.ui.View):
         await interaction.channel.send(embed=embed)
         await interaction.channel.delete()
 
-    async def on_timeout(self):
-        self.clear_items()
+async def handle_modmail(message):
+    guild = bot.get_guild(GUILD_ID)
+    category = discord.utils.get(guild.categories, id=MODMAIL_CATEGORY_ID)
+    if not category:
+        print("⚠️ Modmail category not found!")
+        return
+
+    existing_channel = discord.utils.get(guild.text_channels, name=f"thread—{message.author.id}")
+    if existing_channel:
+        modmail_channel = existing_channel
+    else:
+        modmail_channel = await guild.create_text_channel(
+            name=f"thread—{message.author.id}",
+            category=category
+        )
+        embed = discord.Embed(
+            title="<a:w_catrolling:1353670148518707290>　　ﾉ　　new thread opened.",
+            description=f"✧ **submitting a blacklist?**\nprovide doc link immediately & add more details!\n✧ **verifying?**\nmake sure you read everything in the verify channel first. when you're ready, please send the necessary info!\n✧ **others?**\nno we don't do partnerships. no we are not hiring pms. modmail is for important dms only!",
+            color=discord.Color.blue()
+        )
+        embed.set_thumbnail(url=message.author.avatar.url)
+
+        custom_emoji = discord.utils.get(guild.emojis, id=CUSTOM_EMOJI_ID)
+        emoji_str = str(custom_emoji) if custom_emoji else "❌"
+
+        view = CloseButton(message.author.id)
+        view.children[0].emoji = emoji_str
+
+        await modmail_channel.send(embed=embed, view=view)
+
+    embed = discord.Embed(
+        title="<a:NatsuGroove:1353422820335554632>　　ﾉ　　user message:",
+        description=message.content,
+        color=discord.Color.green()
+    )
+    embed.set_author(name=message.author.name, icon_url=message.author.avatar.url)
+    
+    if message.attachments:
+        embed.add_field(name="Attachments", value="\n".join(a.url for a in message.attachments))
+    
+    await modmail_channel.send(embed=embed)
+
+    confirm_embed = discord.Embed(
+        title="message sent! ⁠♡",
+        description="you will receive replies from our staff team shortly.",
+        color=discord.Color.green()
+    )
+    try:
+        await message.author.send(embed=confirm_embed)
+    except discord.Forbidden:
+        pass
 
 @bot.event
 async def on_ready():
@@ -58,65 +110,35 @@ async def on_ready():
 @bot.event
 async def on_message(message):
     if message.author.bot:
-        return  # Ignore bot messages
+        return
 
-    # Handle DMs (User sends a message to the bot)
     if isinstance(message.channel, discord.DMChannel):
-        guild = bot.get_guild(GUILD_ID)
-        category = discord.utils.get(guild.categories, id=MODMAIL_CATEGORY_ID)
-        if not category:
-            print("⚠️ Modmail category not found!")
-            return
-
-        # Check if a modmail thread already exists for this user
-        existing_channel = discord.utils.get(guild.text_channels, name=f"thread—{message.author.id}")
-        if existing_channel:
-            modmail_channel = existing_channel
-        else:
-            # Create a new modmail thread
-            modmail_channel = await guild.create_text_channel(
-                name=f"thread—{message.author.id}",
-                category=category
-            )
+        await handle_modmail(message)
+    elif message.channel.name.startswith("thread—") and not message.content.startswith(bot.command_prefix):
+        user_id = int(message.channel.name.split("—")[1])
+        user = bot.get_user(user_id)
+        
+        if user:
             embed = discord.Embed(
-                title="<a:w_catrolling:1353670148518707290>　　ﾉ　　new thread opened.",
-                description=f"✧ **submitting a blacklist?**\nprovide doc link immediately & add more details!\n✧ **verifying?**\nmake sure you read everything in the verify channel first. when you're ready, please send the necessary info!\n✧ **others?**\nno we don't do partnerships. no we are not hiring pms. modmail is for important dms only!",
-                color=discord.Color.blue()
+                description=message.content,
+                color=discord.Color.orange()
             )
-            embed.set_thumbnail(url=message.author.avatar.url)
-
-            # Fetch custom emoji
-            custom_emoji = discord.utils.get(guild.emojis, id=CUSTOM_EMOJI_ID)
-            emoji_str = str(custom_emoji) if custom_emoji else "❌"  # Default to ❌ if emoji is not found
-
-            # Add button with custom emoji
-            view = CloseButton(message.author.id)
-            view.children[0].emoji = emoji_str  # Set button emoji
-
-            await modmail_channel.send(embed=embed, view=view)
-
-        # Forward the user's message to the modmail channel as an embed
-        embed = discord.Embed(
-            title="<a:NatsuGroove:1353422820335554632>　　ﾉ　　user message:",
-            description=message.content,
-            color=discord.Color.green()
-        )
-        embed.set_author(name=message.author.name, icon_url=message.author.avatar.url)
-        await modmail_channel.send(embed=embed)
-
-        # Send confirmation message to user
-        confirm_embed = discord.Embed(
-            title="message sent! ⁠♡",
-            description="you will receive replies from our staff team shortly.",
-            color=discord.Color.green()
-        )
-        await message.author.send(embed=confirm_embed)
+            embed.set_footer(text=f"Reply from {message.author.name}", icon_url=message.author.avatar.url)
+            
+            if message.attachments:
+                embed.add_field(name="Attachments", value="\n".join(a.url for a in message.attachments))
+            
+            try:
+                await user.send(embed=embed)
+                await message.add_reaction("✅")
+            except discord.Forbidden:
+                await message.channel.send("⚠️ Cannot send message to this user. They might have DMs disabled.")
+                await message.add_reaction("❌")
 
     await bot.process_commands(message)
 
 @bot.command()
 async def reply(ctx, member: discord.Member, *, response):
-    """Allows staff to reply to a user's modmail"""
     try:
         embed = discord.Embed(
             description=response,
@@ -140,11 +162,6 @@ async def reply(ctx, member: discord.Member, *, response):
         )
         await ctx.send(embed=error_embed)
 
-bot.run(TOKEN)
-
-from flask import Flask
-from threading import Thread
-
 app = Flask(__name__)
 
 @app.route('/')
@@ -152,6 +169,11 @@ def home():
     return "Bot is running!"
 
 def run():
-    app.run(host="0.0.0.0", port=10000)  # Change port if needed
+    app.run(host="0.0.0.0", port=10000)
 
-Thread(target=run).start()
+def start():
+    Thread(target=run).start()
+    bot.run(TOKEN)
+
+if __name__ == "__main__":
+    start()
