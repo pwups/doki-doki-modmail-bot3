@@ -389,11 +389,8 @@ def keep_alive():
 
 # Bot Setup
 intents = discord.Intents.default()
+intents.message_content = True  # ✅ Enable message content intent
 bot = commands.Bot(command_prefix="!", intents=intents)
-
-@bot.event
-async def on_ready():
-    print(f"Logged in as {bot.user}")
 
 # Run the bot with the token from environment variable
 if __name__ == "__main__":
