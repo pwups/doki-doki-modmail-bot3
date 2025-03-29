@@ -16,11 +16,7 @@ logger = logging.getLogger('ModMailBot')
 
 # Define the intents
 intents = discord.Intents.default()
-intents.messages = True
-intents.guilds = True
 intents.message_content = True
-intents.dm_messages = True
-intents.members = True
 
 # Bot initialization
 bot = commands.Bot(command_prefix='!', intents=intents)
