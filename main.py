@@ -29,10 +29,10 @@ class CloseButton(ui.View):
 
     @ui.button(label="Close", style=discord.ButtonStyle.danger)
     async def close(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message("ticket closed.", ephemeral=True)
-        embed = discord.Embed(title="ticket closed 🔒", color=discord.Color.red())
-        embed.description = "your ticket with staff was closed. contact us again if needed!"
-        embed.set_footer(text="sending a new response will open a new ticket.", icon_url=self.channel.guild.icon.url)
+        await interaction.response.send_message("Ticket closed.", ephemeral=True)
+        embed = discord.Embed(title="Ticket Closed 🔒", color=discord.Color.red())
+        embed.description = "Your ticket with staff was closed. Contact us again if needed!"
+        embed.set_footer(text="Sending a new message will open a new ticket.", icon_url=self.channel.guild.icon.url)
         await self.user.send(embed=embed)
         await self.channel.delete()
 
@@ -45,17 +45,22 @@ async def on_ready():
     except Exception as e:
         print(f"Sync error: {e}")
 
+    # Set custom status
+    activity = discord.Activity(type=discord.ActivityType.watching, name="doki hub's DMs ☆")
+    await bot.change_presence(status=discord.Status.online, activity=activity)
+
 @bot.event
 async def on_message(message):
     await bot.process_commands(message)
 
-# User DMs the bot
+    # User DMs the bot
     if message.guild is None and not message.author.bot:
         guild = bot.get_guild(GUILD_ID)
         category = guild.get_channel(CATEGORY_ID)
-        existing = ticket_channels.get(message.author.id)
+        existing_channel = ticket_channels.get(message.author.id)
 
-        if not existing:
+        # If no ticket exists or the channel is missing, create a new ticket
+        if not existing_channel or not bot.get_channel(existing_channel.id):
             overwrites = {
                 guild.default_role: discord.PermissionOverwrite(view_channel=False),
                 guild.get_role(MOD_ROLE_ID): discord.PermissionOverwrite(view_channel=True, send_messages=True),
@@ -69,30 +74,39 @@ async def on_message(message):
             ticket_channels[message.author.id] = channel
 
             embed = discord.Embed(
-                title="ticket created 🔓",
-                description="our staff team will respond when they are available. please be patient!",
+                title="Ticket Created 🔓",
+                description="Our staff team will respond when they are available. Please be patient!",
                 color=discord.Color.blurple()
             )
-            embed.set_footer(text="your message has been sent", icon_url=guild.icon.url)
+            embed.set_footer(text="Your message has been sent", icon_url=guild.icon.url)
             await message.author.send(embed=embed)
 
             await channel.send(embed=discord.Embed(
-                description=f"new ticket created by {message.author.mention}",
+                description=f"New ticket created by {message.author.mention}",
                 color=discord.Color.green()
             ), view=CloseButton(channel, message.author))
 
         else:
-            channel = existing
+            # Refresh the channel from cache
+            channel = bot.get_channel(existing_channel.id)
 
-        await forward_to_ticket(channel, message.author, message.content, message.author.display_avatar.url, message.attachments)
+        # Safely forward the message
+        if channel:
+            await forward_to_ticket(channel, message.author, message.content, message.author.display_avatar.url, message.attachments)
+        else:
+            print(f"Could not find or create a valid channel for {message.author}.")
 
-    # Moderator messages in ticket channel
+    # Moderator messages in ticket channels
     elif message.guild and not message.author.bot:
         if message.channel.category_id == CATEGORY_ID:
             for user_id, chan in ticket_channels.items():
                 if chan.id == message.channel.id:
                     user = await bot.fetch_user(user_id)
-                    embed = discord.Embed(description=message.content, color=discord.Color.blurple(), timestamp=discord.utils.utcnow())
+                    embed = discord.Embed(
+                        description=message.content,
+                        color=discord.Color.blurple(),
+                        timestamp=discord.utils.utcnow()
+                    )
                     embed.set_author(name=message.author.name, icon_url=message.author.display_avatar.url)
                     embed.set_footer(text="ʚ doki hub staff", icon_url=message.guild.icon.url)
 
@@ -116,11 +130,9 @@ async def forward_to_ticket(channel, author, content, avatar_url, attachments):
         fp = await attachment.read()
         files.append(discord.File(io.BytesIO(fp), filename=attachment.filename))
 
-    await channel.send(embed=embed, files=files if files else None)
-
-@bot.event
-async def on_ready():
-    activity = discord.Activity(type=discord.ActivityType.watching, name="doki hub's dms ☆")
-    await bot.change_presence(status=discord.Status.online, activity=activity)
+    try:
+        await channel.send(embed=embed, files=files if files else None)
+    except discord.NotFound:
+        print(f"Channel {channel.id} not found when trying to forward a message.")
 
 bot.run(TOKEN)
