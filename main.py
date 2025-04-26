@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands, ui
 import os
+import itertools
 import io
 
 TOKEN = os.environ.get("TOKEN")
