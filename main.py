@@ -27,12 +27,12 @@ class CloseButton(ui.View):
         self.channel = channel
         self.user = user
 
-    @ui.button(label="Close", style=discord.ButtonStyle.danger)
+    @ui.button(label="︵︵ close ♡", style=discord.ButtonStyle.danger)
     async def close(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_message("Ticket closed.", ephemeral=True)
-        embed = discord.Embed(title="Ticket Closed 🔒", color=discord.Color.red())
-        embed.description = "Your ticket with staff was closed. Contact us again if needed!"
-        embed.set_footer(text="Sending a new message will open a new ticket.", icon_url=self.channel.guild.icon.url)
+        embed = discord.Embed(title="<a:pnk_sparkle:1353665702313197629>　　ﾉ　　ticket closed.", color=discord.Color.red())
+        embed.description = "your ticket with staff was closed. contact us again if needed!"
+        embed.set_footer(text="sending a new message will open a new ticket.", icon_url=self.channel.guild.icon.url)
         await self.user.send(embed=embed)
         await self.channel.delete()
 
@@ -46,7 +46,7 @@ async def on_ready():
         print(f"Sync error: {e}")
 
     # Set custom status
-    activity = discord.Activity(type=discord.ActivityType.watching, name="doki hub's DMs ☆")
+    activity = discord.Activity(type=discord.ActivityType.watching, name="doki hub's dms ☆")
     await bot.change_presence(status=discord.Status.online, activity=activity)
 
 @bot.event
@@ -67,18 +67,18 @@ async def on_message(message):
                 guild.me: discord.PermissionOverwrite(view_channel=True, send_messages=True)
             }
             channel = await guild.create_text_channel(
-                name=f"ticket-{message.author.name}",
+                name=f"ticket—{message.author.name}",
                 category=category,
                 overwrites=overwrites
             )
             ticket_channels[message.author.id] = channel
 
             embed = discord.Embed(
-                title="Ticket Created 🔓",
-                description="Our staff team will respond when they are available. Please be patient!",
+                title="<a:w_catrolling:1353670148518707290>　　ﾉ　　new ticket opened.",
+                description="our staff team will respond when they are available. please be patient!",
                 color=discord.Color.blurple()
             )
-            embed.set_footer(text="Your message has been sent", icon_url=guild.icon.url)
+            embed.set_footer(text="your message has been sent", icon_url=guild.icon.url)
             await message.author.send(embed=embed)
 
             await channel.send(embed=discord.Embed(
