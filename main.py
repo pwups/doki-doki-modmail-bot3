@@ -1,7 +1,10 @@
 import discord
 from discord.ext import commands
 from discord import app_commands, ui
+import os
 import io
+
+TOKEN = os.environ.get("TOKEN")
 
 intents = discord.Intents.default()
 intents.messages = True
@@ -115,4 +118,18 @@ async def forward_to_ticket(channel, author, content, avatar_url, attachments):
 
     await channel.send(embed=embed, files=files if files else None)
 
-bot.run("MTM1MzY2NzMxMTIxNDUzMDU3MA.G4FVlN.DQYspocc_vgZRrhA2p8_1ox_wPHrnAVK0PFzw0")
+status_cycle = itertools.cycle([
+    discord.Activity(type=discord.ActivityType.watching, name="doki hub's dms"),
+    discord.Activity(type=discord.ActivityType.listening, name="dm me for support ☆")
+])
+
+@bot.event
+async def on_ready():
+    print(f"Logged in as {bot.user.name}")
+    change_status.start()  # start the looping task
+
+@tasks.loop(seconds=10)  # change every 10 seconds
+async def change_status():
+    await bot.change_presence(activity=next(status_cycle))
+
+bot.run(TOKEN)
