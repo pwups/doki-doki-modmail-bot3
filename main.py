@@ -101,7 +101,7 @@ async def on_message(message):
                         fp = await attachment.read()
                         files.append(discord.File(io.BytesIO(fp), filename=attachment.filename))
 
-                  try:
+                    try:
                         await user.send(embed=embed, files=files if files else None)
                     except discord.Forbidden:
                         await message.channel.send("Could not DM the user.")
