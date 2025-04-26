@@ -1,12 +1,7 @@
 import discord
 from discord.ext import commands
 from discord import app_commands, ui
-from dotenv import load_dotenv
-import os
 import io
-
-load_dotenv()
-TOKEN = os.getenv("TOKEN")
 
 intents = discord.Intents.default()
 intents.messages = True
@@ -120,4 +115,4 @@ async def forward_to_ticket(channel, author, content, avatar_url, attachments):
 
     await channel.send(embed=embed, files=files if files else None)
 
-bot.run(TOKEN)
+bot.run("MTM1MzY2NzMxMTIxNDUzMDU3MA.G4FVlN.DQYspocc_vgZRrhA2p8_1ox_wPHrnAVK0PFzw0")
