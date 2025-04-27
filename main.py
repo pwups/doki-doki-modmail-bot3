@@ -67,17 +67,30 @@ async def on_message(message):
         category = guild.get_channel(CATEGORY_ID)
         existing_channel = ticket_channels.get(message.author.id)
 
-        if not existing_channel or not bot.get_channel(existing_channel.id):
+                if not existing_channel or not bot.get_channel(existing_channel.id):
+            mod_role = guild.get_role(MOD_ROLE_ID)
+            if not mod_role:
+                print(f"Mod role with ID {MOD_ROLE_ID} not found.")
+                return
+            if not guild.default_role:
+                print("Default role not found.")
+                return
+            if not guild.me:
+                print("Bot user (me) not found.")
+                return
+
             overwrites = {
                 guild.default_role: discord.PermissionOverwrite(view_channel=False),
-                guild.get_role(MOD_ROLE_ID): discord.PermissionOverwrite(view_channel=True, send_messages=True),
+                mod_role: discord.PermissionOverwrite(view_channel=True, send_messages=True),
                 guild.me: discord.PermissionOverwrite(view_channel=True, send_messages=True)
             }
+
             channel = await guild.create_text_channel(
                 name=f"ticket—{message.author.name}",
                 category=category,
                 overwrites=overwrites
             )
+
             ticket_channels[message.author.id] = channel
 
             embed = discord.Embed(
