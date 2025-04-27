@@ -101,10 +101,10 @@ async def on_message(message):
                 description="our staff team will respond when they are available. please be patient!",
                 color=LIGHT_PINK
             )
-            embed.set_footer(text="your message has been sent", icon_url=guild.icon.url)
-            await message.author.send(embed=embed)
-
-            await channel.send(embed=discord.Embed(
+        embed.set_footer(text="your message has been sent", icon_url=guild.icon.url)
+        await message.author.send(embed=embed)
+        
+        await channel.send(embed=discord.Embed(
                 description=f"New ticket created by {message.author.mention}",
                 color=LIGHT_YELLOW
             ), view=CloseButton(channel, message.author))
