@@ -95,8 +95,8 @@ async def on_message(message):
             overwrites=overwrites
         )
         ticket_channels[message.author.id] = channel
-
-            embed = discord.Embed(
+        
+        embed = discord.Embed(
                 title="<a:w_catrolling:1353670148518707290>　　ﾉ　　new ticket opened.",
                 description="our staff team will respond when they are available. please be patient!",
                 color=LIGHT_PINK
