@@ -63,7 +63,7 @@ async def on_message(message):
     await bot.process_commands(message)
 
     if message.guild is None and not message.author.bot:
-    guild = bot.get_guild(GUILD_ID)
+        guild = bot.get_guild(GUILD_ID)
     if not guild:
         print(f"Guild with ID {GUILD_ID} not found.")
         return
