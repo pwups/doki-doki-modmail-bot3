@@ -18,7 +18,7 @@ ticket_channels = {}
 
 GUILD_ID = 1353378102650339450  # Replace with your guild ID
 CATEGORY_ID = 1353378102650339451  # Replace with the category ID where ticket channels go
-MOD_ROLE_ID = 1355839481982488626  # Replace with your moderator role ID
+MOD_ROLE_ID = 1365973809789800549  # Replace with your moderator role ID
 CUSTOM_EMOJI = "<a:04_pink_mail:1353838679268921427>"  # Replace with your emoji
 
 # Define custom hex colors
