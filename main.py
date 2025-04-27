@@ -63,35 +63,38 @@ async def on_message(message):
     await bot.process_commands(message)
 
     if message.guild is None and not message.author.bot:
-        guild = bot.get_guild(GUILD_ID)
-        category = guild.get_channel(CATEGORY_ID)
-        existing_channel = ticket_channels.get(message.author.id)
+    guild = bot.get_guild(GUILD_ID)
+    if not guild:
+        print(f"Guild with ID {GUILD_ID} not found.")
+        return
 
-                if not existing_channel or not bot.get_channel(existing_channel.id):
-            mod_role = guild.get_role(MOD_ROLE_ID)
-            if not mod_role:
-                print(f"Mod role with ID {MOD_ROLE_ID} not found.")
-                return
-            if not guild.default_role:
-                print("Default role not found.")
-                return
-            if not guild.me:
-                print("Bot user (me) not found.")
-                return
+    category = guild.get_channel(CATEGORY_ID)
+    if not category:
+        print(f"Category with ID {CATEGORY_ID} not found.")
+        return  # Stop if the category doesn't exist!
 
-            overwrites = {
-                guild.default_role: discord.PermissionOverwrite(view_channel=False),
-                mod_role: discord.PermissionOverwrite(view_channel=True, send_messages=True),
-                guild.me: discord.PermissionOverwrite(view_channel=True, send_messages=True)
-            }
+    existing_channel = ticket_channels.get(message.author.id)
 
-            channel = await guild.create_text_channel(
-                name=f"ticket—{message.author.name}",
-                category=category,
-                overwrites=overwrites
-            )
+    if not existing_channel or not bot.get_channel(existing_channel.id):
+        # Continue safely knowing category exists
+        mod_role = guild.get_role(MOD_ROLE_ID)
+        if not mod_role:
+            print(f"Mod role with ID {MOD_ROLE_ID} not found.")
+            return
 
-            ticket_channels[message.author.id] = channel
+        overwrites = {
+            guild.default_role: discord.PermissionOverwrite(view_channel=False),
+            mod_role: discord.PermissionOverwrite(view_channel=True, send_messages=True),
+            guild.me: discord.PermissionOverwrite(view_channel=True, send_messages=True)
+        }
+
+        # Create the ticket channel under the found category
+        channel = await guild.create_text_channel(
+            name=f"ticket—{message.author.name}",
+            category=category,
+            overwrites=overwrites
+        )
+        ticket_channels[message.author.id] = channel
 
             embed = discord.Embed(
                 title="<a:w_catrolling:1353670148518707290>　　ﾉ　　new ticket opened.",
